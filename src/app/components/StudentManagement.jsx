@@ -1,51 +1,146 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Badge } from './ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Search, Plus, Edit, Eye, Phone } from 'lucide-react';
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "./ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+import { Badge } from "./ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Search, Plus, Edit, Eye, Phone } from "lucide-react";
+import { api } from "../../lib/api";
 
-const mockStudents = [
-  { id: 1, name: 'John Kamau', class: 'Class 4', roll: '001', parent: 'Mary Kamau', phone: '+254 712 345 678', status: 'Active' },
-  { id: 2, name: 'Grace Wanjiru', class: 'Class 5', roll: '002', parent: 'Peter Wanjiru', phone: '+254 723 456 789', status: 'Active' },
-  { id: 3, name: 'David Ochieng', class: 'Class 3', roll: '003', parent: 'Jane Ochieng', phone: '+254 734 567 890', status: 'Active' },
-  { id: 4, name: 'Sarah Achieng', class: 'Class 6', roll: '004', parent: 'Joseph Achieng', phone: '+254 745 678 901', status: 'Active' },
-  { id: 5, name: 'Michael Kipchoge', class: 'Class 2', roll: '005', parent: 'Ruth Kipchoge', phone: '+254 756 789 012', status: 'Active' },
+const classOptions = [
+  "Class 1",
+  "Class 2",
+  "Class 3",
+  "Class 4",
+  "Class 5",
+  "Class 6",
 ];
 
 export default function StudentManagement() {
-  const [students, setStudents] = useState(mockStudents);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('all');
+  const [students, setStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClass, setSelectedClass] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newStudent, setNewStudent] = useState({
-    name: '',
-    class: '',
-    roll: '',
-    parent: '',
-    phone: '',
+    name: "",
+    class: "",
+    roll: "",
+    parent: "",
+    phone: "",
+    parentUsername: "",
+    parentPassword: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         student.roll.includes(searchTerm);
-    const matchesClass = selectedClass === 'all' || student.class === selectedClass;
+  useEffect(() => {
+    loadStudents();
+  }, []);
+
+  async function loadStudents() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await api.getStudents();
+      setStudents(data);
+    } catch (err) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filteredStudents = students.filter((student) => {
+    const displayName = `${student.firstName} ${student.lastName}`
+      .trim()
+      .toLowerCase();
+    const matchesSearch =
+      displayName.includes(searchTerm.toLowerCase()) ||
+      (student.roll || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesClass =
+      selectedClass === "all" || student.studentClass === selectedClass;
     return matchesSearch && matchesClass;
   });
 
-  const handleAddStudent = () => {
-    const student = {
-      id: students.length + 1,
-      ...newStudent,
-      status: 'Active'
-    };
-    setStudents([...students, student]);
-    setNewStudent({ name: '', class: '', roll: '', parent: '', phone: '' });
-    setIsAddDialogOpen(false);
+  const handleAddStudent = async () => {
+    if (!newStudent.name.trim()) {
+      setError("Student name is required");
+      return;
+    }
+    if (!newStudent.parent.trim()) {
+      setError("Parent name is required");
+      return;
+    }
+    if (!newStudent.parentUsername.trim() || !newStudent.parentPassword.trim()) {
+      setError("Parent username and password are required");
+      return;
+    }
+
+    const [firstName, ...remaining] = newStudent.name.trim().split(" ");
+    const lastName = remaining.join(" ");
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const created = await api.createStudent({
+        firstName,
+        lastName,
+        studentClass: newStudent.class,
+        roll: newStudent.roll,
+        parentName: newStudent.parent,
+        phone: newStudent.phone,
+        parentUsername: newStudent.parentUsername,
+        parentPassword: newStudent.parentPassword,
+        status: "Active",
+      });
+
+      setStudents([created, ...students]);
+      setNewStudent({
+        name: "",
+        class: "",
+        roll: "",
+        parent: "",
+        phone: "",
+        parentUsername: "",
+        parentPassword: "",
+      });
+      setIsAddDialogOpen(false);
+    } catch (err) {
+      setError(err.message || "Failed to save student");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -55,7 +150,9 @@ export default function StudentManagement() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <CardTitle>Student Management</CardTitle>
-              <CardDescription>Manage student enrollment and records</CardDescription>
+              <CardDescription>
+                Manage student enrollment and records
+              </CardDescription>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
@@ -67,30 +164,43 @@ export default function StudentManagement() {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Add New Student</DialogTitle>
-                  <DialogDescription>Enter student details to register</DialogDescription>
+                  <DialogDescription>
+                    Enter student details to register
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                  {error ? (
+                    <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {error}
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
                     <Label>Student Name</Label>
                     <Input
                       placeholder="Enter full name"
                       value={newStudent.name}
-                      onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewStudent({ ...newStudent, name: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Class</Label>
-                    <Select value={newStudent.class} onValueChange={(value) => setNewStudent({ ...newStudent, class: value })}>
+                    <Select
+                      value={newStudent.class}
+                      onValueChange={(value) =>
+                        setNewStudent({ ...newStudent, class: value })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Class 1">Class 1</SelectItem>
-                        <SelectItem value="Class 2">Class 2</SelectItem>
-                        <SelectItem value="Class 3">Class 3</SelectItem>
-                        <SelectItem value="Class 4">Class 4</SelectItem>
-                        <SelectItem value="Class 5">Class 5</SelectItem>
-                        <SelectItem value="Class 6">Class 6</SelectItem>
+                        {classOptions.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -99,7 +209,9 @@ export default function StudentManagement() {
                     <Input
                       placeholder="Enter roll number"
                       value={newStudent.roll}
-                      onChange={(e) => setNewStudent({ ...newStudent, roll: e.target.value })}
+                      onChange={(e) =>
+                        setNewStudent({ ...newStudent, roll: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -107,7 +219,9 @@ export default function StudentManagement() {
                     <Input
                       placeholder="Enter parent name"
                       value={newStudent.parent}
-                      onChange={(e) => setNewStudent({ ...newStudent, parent: e.target.value })}
+                      onChange={(e) =>
+                        setNewStudent({ ...newStudent, parent: e.target.value })
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -115,11 +229,46 @@ export default function StudentManagement() {
                     <Input
                       placeholder="+254 7XX XXX XXX"
                       value={newStudent.phone}
-                      onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
+                      onChange={(e) =>
+                        setNewStudent({ ...newStudent, phone: e.target.value })
+                      }
                     />
                   </div>
-                  <Button onClick={handleAddStudent} className="w-full bg-blue-600 hover:bg-blue-700">
-                    Register Student
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Parent Username</Label>
+                      <Input
+                        placeholder="parent.abel"
+                        value={newStudent.parentUsername}
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            parentUsername: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Parent Password</Label>
+                      <Input
+                        type="password"
+                        placeholder="Create password"
+                        value={newStudent.parentPassword}
+                        onChange={(e) =>
+                          setNewStudent({
+                            ...newStudent,
+                            parentPassword: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleAddStudent}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={loading}
+                  >
+                    {loading ? "Saving..." : "Register Student"}
                   </Button>
                 </div>
               </DialogContent>
@@ -143,12 +292,11 @@ export default function StudentManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Classes</SelectItem>
-                <SelectItem value="Class 1">Class 1</SelectItem>
-                <SelectItem value="Class 2">Class 2</SelectItem>
-                <SelectItem value="Class 3">Class 3</SelectItem>
-                <SelectItem value="Class 4">Class 4</SelectItem>
-                <SelectItem value="Class 5">Class 5</SelectItem>
-                <SelectItem value="Class 6">Class 6</SelectItem>
+                {classOptions.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -161,41 +309,66 @@ export default function StudentManagement() {
                   <TableHead>Student Name</TableHead>
                   <TableHead>Class</TableHead>
                   <TableHead>Parent/Guardian</TableHead>
+                  <TableHead>Parent Login</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredStudents.map((student) => (
-                  <TableRow key={student.id}>
-                    <TableCell className="font-medium">{student.roll}</TableCell>
-                    <TableCell>{student.name}</TableCell>
-                    <TableCell>{student.class}</TableCell>
-                    <TableCell>{student.parent}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3 w-3 text-gray-400" />
-                        {student.phone}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-green-100 text-green-700">
-                        {student.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      Loading students...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => (
+                    <TableRow key={student.id}>
+                      <TableCell className="font-medium">
+                        {student.roll || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {`${student.firstName} ${student.lastName}`.trim()}
+                      </TableCell>
+                      <TableCell>{student.studentClass || "—"}</TableCell>
+                      <TableCell>{student.parentName || "—"}</TableCell>
+                      <TableCell>
+                        {student.parentUser?.username || student.parentUsername || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-3 w-3 text-gray-400" />
+                          {student.phone || "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-700"
+                        >
+                          {student.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      No students found.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

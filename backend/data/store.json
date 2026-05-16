@@ -1,0 +1,113 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "role": "admin",
+      "username": "admin",
+      "password": "admin123",
+      "displayName": "School Administrator",
+      "createdAt": "2026-05-16T00:00:00.000Z",
+      "updatedAt": "2026-05-16T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "role": "teacher",
+      "username": "john@001",
+      "password": "john123",
+      "displayName": "John Kinyus",
+      "teacherId": 1,
+      "createdAt": "2026-05-16T19:01:15.471Z",
+      "updatedAt": "2026-05-16T19:01:15.471Z"
+    }
+  ],
+  "students": [
+    {
+      "id": 1,
+      "firstName": "Abel",
+      "lastName": "Kimani",
+      "email": null,
+      "dob": null,
+      "studentClass": "Class 1",
+      "roll": "001",
+      "parentName": "Peter Kimani",
+      "phone": "+254743212120",
+      "status": "Active",
+      "createdAt": "2026-05-16T18:18:52.237Z",
+      "updatedAt": "2026-05-16T18:18:52.237Z"
+    }
+  ],
+  "teachers": [
+    {
+      "id": 1,
+      "fullName": "John Kinyus",
+      "assignedClass": "Class 1",
+      "subjects": [
+        "Math",
+        "Science",
+        "Social Studies"
+      ],
+      "createdAt": "2026-05-16T19:01:15.471Z",
+      "updatedAt": "2026-05-16T19:01:15.471Z"
+    }
+  ],
+  "fees": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "totalFee": 10000,
+      "paid": 2500,
+      "balance": 7500,
+      "status": "Partial",
+      "paymentMethod": "mpesa",
+      "receiptNumber": "MC12WFRES132",
+      "lastPayment": "2026-05-12",
+      "createdAt": "2026-05-16T18:40:52.452Z",
+      "updatedAt": "2026-05-16T18:40:52.452Z"
+    }
+  ],
+  "attendanceRecords": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "studentClass": "Class 1",
+      "date": "2026-05-16",
+      "present": true,
+      "note": null,
+      "createdAt": "2026-05-16T18:29:40.516Z",
+      "updatedAt": "2026-05-16T18:29:48.492Z"
+    }
+  ],
+  "studentPerformance": [
+    {
+      "id": 1,
+      "studentId": 1,
+      "teacherId": 1,
+      "studentClass": "Class 1",
+      "term": "Term 1",
+      "scores": {
+        "Math": 89,
+        "Science": 80,
+        "Social Studies": 95
+      },
+      "average": 88,
+      "grade": "A",
+      "status": "approved",
+      "createdAt": "2026-05-16T19:03:52.301Z",
+      "updatedAt": "2026-05-16T19:05:39.770Z"
+    }
+  ],
+  "classPerformance": [
+    {
+      "id": 1,
+      "teacherId": 1,
+      "studentClass": "Class 1",
+      "term": "Term 1",
+      "subject": "Math",
+      "averageScore": 89,
+      "summary": "the perfomance was awsome",
+      "status": "approved",
+      "createdAt": "2026-05-16T19:04:34.029Z",
+      "updatedAt": "2026-05-16T19:05:41.609Z"
+    }
+  ]
+}
